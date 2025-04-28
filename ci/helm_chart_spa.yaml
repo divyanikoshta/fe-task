@@ -1,0 +1,48 @@
+5.1 Helm Chart for SPA
+Task:
+Write a Helm chart for deploying a frontend SPA.
+Include service.enabled, ingress.enabled, and extraEnvVars from values.yaml.
+Use conditionals and named templates in _helpers.tpl
+Focus: Helm templating, conditionals, DRY templates, deployment config
+
+# values.yaml
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: spa.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+extraEnvVars:
+  - name: API_URL
+    value: "https://api.example.com"
+    
+# _helpers.tpl
+{{- define "spa.fullname" -}}
+{{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+# Conditionals in deployment.yaml, service.yaml, and ingress.yaml:
+# deployment.yaml (env section)
+env:
+{{- range .Values.extraEnvVars }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+
+# service.yaml
+{{- if .Values.service.enabled }}
+...
+{{- end }}
+
+# ingress.yaml
+{{- if .Values.ingress.enabled }}
+...
+{{- end }}

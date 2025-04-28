@@ -1,0 +1,40 @@
+# 5.2 Helm Hooks for Frontend Cache Busting
+
+# Task: Write a Helm post-upgrade hook that:
+# Sends a request to Cloudflare/AWS to purge CDN cache or update an S3 website deployment with cache-busted filenames.
+# Include helm.sh/hook, hook-weight, and hook-delete-policy
+
+# Focus: Deployment automation, hooks, CDN/cache invalidation
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "spa.fullname" . }}-cache-bust
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: bust
+          image: curlimages/curl:latest
+          command: ["sh", "-c"]
+          args:
+            - |
+              curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/purge_cache" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+              --data '{"purge_everything":true}'
+          env:
+            - name: ZONE
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-secrets
+                  key: zone
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-secrets
+                  key: token
